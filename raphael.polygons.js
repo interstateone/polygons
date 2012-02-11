@@ -620,11 +620,12 @@ Raphael.st.join = function() {
 // Takes the element's path string and converts it to an array of node objects
 // Ensures that they are in a clockwise order
 Raphael.el.toNodes = function() {
-
 	// pathStringArray is in the form [[SVG instruction, x, y], ...]
 	var pathStringArray = Raphael.parsePathString(this.attr("path")),
 	nodeArray = [];
-	pathStringArray.pop(); // Get rid of the Z instruction on the end
+	if (pathStringArray[pathStringArray.length - 1][0] === "Z") {
+		pathStringArray.pop(); // Get rid of the Z instruction on the end	
+	}
 
 	pathStringArray.forEach (function(vertex) {
 		nodeArray.push(new Node(vertex[1], vertex[2], false));
@@ -641,6 +642,5 @@ Raphael.el.toNodes = function() {
 	if (sum > 0) {
 		nodeArray.reverse();
 	}
-
 	return nodeArray;			
 };
