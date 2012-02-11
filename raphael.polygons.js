@@ -331,6 +331,218 @@ Raphael.fn.clip = function(subject, clip) {
 	// End of Raphael.fn.clip()
 };
 
+// Utility join function
+// Takes two path element objects
+// Returns the joined path object
+// The only difference between this and the clip function is the starting entry/exit status of the mark function
+Raphael.fn.join = function(subject, clip) {
+
+	subject = subject.toNodes();
+	clip = clip.toNodes();
+
+	var subjectLength = subject.length,
+		clipLength = clip.length,
+		subjectIndex,
+		clipIndex,
+		indexTo,
+		i, j;
+
+	// Step 1: Loop through all of the line segments and find intersects
+	for (subjectIndex = 0; subjectIndex < subjectLength; subjectIndex++) {
+		if (!subject[subjectIndex].intersect) {
+			for (clipIndex = 0; clipIndex < clipLength; clipIndex++) {
+				if (!clip[clipIndex].intersect) {
+
+					// We need to find the next non-intersect node as well
+					// Because we're working with arrays, we need to be sure that we stick within the bounds and wrap around the end
+					// That's what this dumb hunk of code is doing
+
+					// Initial next value inside bounds
+					if (subjectIndex + 1 === subjectLength) {
+						i = -subjectIndex;
+					}
+					else {
+						i = 1;
+					}
+
+					// Increment and wrap around
+					while (subject[subjectIndex + i].intersect) {
+						i++;
+						if (subjectIndex + i === subjectLength) {
+							i = -subjectIndex;
+						}
+					}
+
+					// Same steps here for the clip
+					if (clipIndex + 1 === clipLength) {
+						j = -clipIndex;
+					}
+					else {
+						j = 1;
+					}
+
+					while (clip[clipIndex + j].intersect) {
+						j++;
+						if (clipIndex + j === clipLength) {
+							j = -clipIndex;
+						}
+					}
+
+					var result = doesIntersect(subject[subjectIndex],
+												subject[subjectIndex + i],
+												clip[clipIndex],
+												clip[clipIndex + j]);
+					
+					if (result)	{
+						subject.splice(subjectIndex + 1, 0, result);
+						clip.splice(clipIndex + 1, 0, result);
+						subjectLength++;
+						clipLength++;
+					}
+				}
+			}	
+		}
+	}
+
+	// Step 2: Mark entry points for both polygons
+	markEntryPoints(subject, clip, false);
+	markEntryPoints(clip, subject, false);	
+
+	// Step 3: Build the clipped polygon
+	// Traverse the subject node list until you get to an entry/exit node, switch to clip node list
+	// Traverse the clip node list until you get to an entry/exit node, switch to subject node list
+	// Stop when you reach the first visited entry/exit node
+	// The variable 'aux' represents the current node we're at
+	var aux = subject[0],
+		newPolygon = [],
+		subActive = true,
+		forward = true;
+
+	i = 0;
+
+	// Start at the first subject entry vertex
+	while (aux.entry != true) {
+		i++;
+		aux = subject[i];
+	}
+	subject[i].visited = true;
+
+	// Traverse until we hit the first vertex we pushed
+	do {
+		newPolygon.push(aux);
+
+		// If this is an intersect node, switch to the neighbour node
+		if (aux.intersect === true) {
+
+			// Find the neighbour if we're switching from subject to clip
+			if (subActive) {
+				i = 0;
+				while (clip[i].x != aux.x && clip[i].y != aux.y) {
+					i++;
+				}
+
+				// If it's an entry, go forward
+				// If it's an exit, go backward
+				if (clip[i].entry === false) {
+					forward = true;
+				}
+				else {
+					forward = false;
+				}
+			}
+			// Find the neighbour if we're switching from clip to subject
+			else {
+				i = 0;
+				while (subject[i].x != aux.x && subject[i].y != aux.y) {
+					i++;
+				}
+
+				// If it's an entry, go forward
+				// If it's an exit, go backward
+				if (subject[i].entry === true) {
+					forward = true;
+				}
+				else {
+					forward = false;
+				}
+			}
+
+			// We just switched arrays
+			subActive = !subActive;
+
+			// Increment/decrement the counter
+			if (forward) {
+				i++;
+			}
+			else {
+				i--;
+			}
+
+			// Make sure we wrap around the appropriate array if we need to
+			if (subActive && i === subjectLength) { 
+				i = 0;
+			}
+			else if (subActive && i < 0) { 
+				i = subjectLength - 1;
+			}
+			else if (!subActive && i === clipLength) {
+				i = 0;
+			}
+			else if (!subActive && i < 0) {
+				i = clipLength - 1;
+			}
+
+			// Update aux to the new node
+			if (subActive) {
+				subject[i].visited = true;
+				aux = subject[i];
+			}
+			else {
+				clip[i].visited = true;
+				aux = clip[i];
+			}
+		}
+		// Not an intersect, traverse ahead in the proper direction
+		else {
+
+			// Increment/decrement the counter
+			if (forward) {
+				i++;
+			}
+			else {
+				i--;
+			}
+
+			// Make sure we wrap around the appropriate array
+			if (subActive && i === subjectLength) { 
+				i = 0;
+			}
+			else if (subActive && i < 0) { 
+				i = subjectLength - 1;
+			}
+			else if (!subActive && i === clipLength) {
+				i = 0;
+			}
+			else if (!subActive && i < 0) {
+				i = clipLength - 1;
+			}
+
+			// Update aux
+			if (subActive) {
+				subject[i].visited = true;
+				aux = subject[i];
+			}
+			else {
+				clip[i].visited = true;
+				aux = clip[i];
+			}	
+		}
+	} while (aux.x !== newPolygon[0].x && aux.y !== newPolygon[0].y);
+
+	return paper.path("M" + newPolygon.join("L") + "Z");
+	// End of Raphael.fn.clip()
+};
+
 // Clip the elements of a set
 // Returns a new set containing the new polygons or false if none (no overlap)
 /*Raphael.st.clip = function() {
@@ -376,6 +588,34 @@ Raphael.fn.clip = function(subject, clip) {
 		return false;
 	}
 };*/
+
+// Clip the elements of a set
+// Returns a new set containing the new polygons or false if none (no overlap)
+Raphael.st.join = function() {
+	var setSize = this.length,
+		clipIndex,
+		result = null;
+
+	// Clip the two polygons
+	// Returns a path object of the joined polygon or false if no overlap
+	result = paper.join(this[0], this[1]);
+
+	// If we need to find the sum of more than two polygons, let's loop it
+	if (setSize >= 3) {
+		for (clipIndex = 2; clipIndex < setSize; clipIndex++) {
+			
+			// Clip it!
+			result = paper.join(result, this[clipIndex]);
+		}
+	}
+
+	// Return appropriately
+	if(result){
+		return result;
+	} else {
+		return false;
+	}
+};
 
 // Takes the element's path string and converts it to an array of node objects
 // Ensures that they are in a clockwise order
