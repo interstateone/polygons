@@ -20,14 +20,14 @@ function Node(x, y, intersect) {
 	// Is this node on a given line segment?
 	// Returns: true / false
 	this.onLine = function(n0, n1) {
-		
+
 		// Get vectors for the line segment and from this node to n0
 		// Ratio of dot prodcuts gives the projection of one onto the other
 		var v0    = new Node(n1.x - n0.x, n1.y - n0.y),
 			vthis = new Node(this.x - n0.x, this.y - n0.y),
 			ratio,
 			denom = v0.x * v0.x + v0.y * v0.y;
-		
+
 		// First line segment has zero length, are these equal points?
 		if (denom === 0.0) {
 			return (this.x == n0.x && this.y == n0.y);
