@@ -120,22 +120,13 @@ var markEntryPoints = function(subject, clip, flag) {
 	}
 };
 
-// Utility clipping function
-// Takes two path element objects representing subject and clip polygons
-// Returns the resultant clipped polygons as a Raphael.js element object
-Raphael.fn.clip = function(subject, clip) {
-
-	subject = subject.toNodes();
-	clip = clip.toNodes();
-
+var markIntersects = function(subject, clip) {
 	var subjectLength = subject.length,
 		clipLength = clip.length,
 		subjectIndex,
 		clipIndex,
-		indexTo,
 		i, j;
 
-	// Step 1: Loop through all of the line segments and find intersects
 	for (subjectIndex = 0; subjectIndex < subjectLength; subjectIndex++) {
 		if (!subject[subjectIndex].intersect) {
 			for (clipIndex = 0; clipIndex < clipLength; clipIndex++) {
@@ -180,7 +171,7 @@ Raphael.fn.clip = function(subject, clip) {
 												subject[subjectIndex + i],
 												clip[clipIndex],
 												clip[clipIndex + j]);
-					
+
 					if (result)	{
 						subject.splice(subjectIndex + 1, 0, result);
 						clip.splice(clipIndex + 1, 0, result);
@@ -188,15 +179,31 @@ Raphael.fn.clip = function(subject, clip) {
 						clipLength++;
 					}
 				}
-			}	
+			}
 		}
 	}
+}
 
-	// Step 2: Mark entry points for both polygons
+// Utility clipping function
+// Takes two path element objects representing subject and clip polygons
+// Returns the resultant clipped polygons as a Raphael.js element object
+Raphael.fn.clip = function(subject, clip) {
+
+	var subjectLength,
+		clipLength;
+
+	// Convert the two Raphael paths to Node arrays
+	subject = subject.toNodes();
+	clip = clip.toNodes();
+
+	// Loop through all of the line segments and find intersects
+	markIntersects(subject, clip);
+
+	// Mark entry points for both polygons
 	markEntryPoints(subject, clip, true);
-	markEntryPoints(clip, subject, true);	
+	markEntryPoints(clip, subject, true);
 
-	// Step 3: Build the clipped polygon
+	// Build the clipped polygon
 	// Traverse the subject node list until you get to an entry/exit node, switch to clip node list
 	// Traverse the clip node list until you get to an entry/exit node, switch to subject node list
 	// Stop when you reach the first visited entry/exit node
@@ -323,13 +330,13 @@ Raphael.fn.clip = function(subject, clip) {
 			else {
 				clip[i].visited = true;
 				aux = clip[i];
-			}	
+			}
 		}
 	} while (aux.x !== newPolygon[0].x && aux.y !== newPolygon[0].y);
 
 	return paper.path("M" + newPolygon.join("L") + "Z");
-	// End of Raphael.fn.clip()
 };
+// End of Raphael.fn.clip()
 
 // Utility join function
 // Takes two path element objects
@@ -344,7 +351,6 @@ Raphael.fn.join = function(subject, clip) {
 		clipLength = clip.length,
 		subjectIndex,
 		clipIndex,
-		indexTo,
 		i, j;
 
 	// Step 1: Loop through all of the line segments and find intersects
@@ -392,7 +398,7 @@ Raphael.fn.join = function(subject, clip) {
 												subject[subjectIndex + i],
 												clip[clipIndex],
 												clip[clipIndex + j]);
-					
+
 					if (result)	{
 						subject.splice(subjectIndex + 1, 0, result);
 						clip.splice(clipIndex + 1, 0, result);
@@ -400,13 +406,13 @@ Raphael.fn.join = function(subject, clip) {
 						clipLength++;
 					}
 				}
-			}	
+			}
 		}
 	}
 
 	// Step 2: Mark entry points for both polygons
 	markEntryPoints(subject, clip, false);
-	markEntryPoints(clip, subject, false);	
+	markEntryPoints(clip, subject, false);
 
 	// Step 3: Build the clipped polygon
 	// Traverse the subject node list until you get to an entry/exit node, switch to clip node list
