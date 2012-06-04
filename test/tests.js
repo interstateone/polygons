@@ -78,7 +78,17 @@ module("markEntryPoints");
 // Utilizes containmentTest
 
 	test("should alternate between marking nodes as entries and exits", function () {
-		
+
+	});
+
+module("markIntersects");
+
+	test("should insert all points of intersection between two non-overlapping polygons", function () {
+
+	});
+
+	test("should not insert any nodes if the polygons don't intersect", function () {
+
 	});
 
 module("toNodes");
