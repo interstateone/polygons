@@ -10,6 +10,8 @@ Gives the ability to find the intersection of two or more polygons as a new poly
 They can be concave or convex, but self-intersecting may not work properly.
 Uses "node" objects to represent vertices of polygons and their intersection points.
 
+Run the tests with `mocha --compilers coffee:coffee-script`
+
 The Good Stuff:
 
 	- Raphael.fn.clip
