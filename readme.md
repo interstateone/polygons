@@ -1,6 +1,12 @@
 Raphaël.js Polygon Intersection
 ===
 
+## This project has been deprecated
+
+I no longer maintain or provide support for this project. It remains on GitHub as a record of the project and for any possible benefits to others.
+
+---
+
 Gives the ability to find the intersection of two or more polygons as a new polygon.
 They can be concave or convex, but self-intersecting may not work properly.
 Uses "node" objects to represent vertices of polygons and their intersection points.
